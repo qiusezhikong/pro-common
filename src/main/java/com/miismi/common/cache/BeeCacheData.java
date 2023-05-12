@@ -111,7 +111,11 @@ public class BeeCacheData<T> implements BeeCache<T> {
         /**
          * 替换
          */
-        REPLACE
+        REPLACE,
+        /**
+         * 单独
+         */
+        SINGLE
     }
 
     public static class Time{
@@ -173,6 +177,9 @@ public class BeeCacheData<T> implements BeeCache<T> {
                 throw new NullPointerException("this.dataLoad is null!");
             }
             BeeCacheData<T> newCacheDataImpl = new BeeCacheData<>(this);
+            if(this.mergeType == MergeType.SINGLE) {
+                return newCacheDataImpl;
+            }
             BeeCacheData<?> oldCacheDataImpl = cacheMap.putIfAbsent(this.key, newCacheDataImpl);
             if (oldCacheDataImpl != null) {
                 switch (this.mergeType) {

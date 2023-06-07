@@ -14,6 +14,7 @@ public class BeeCache implements Cache {
     private final long timeInterval;
     private final ExpirationTimeType expirationTimeType;
     private final Class<?> clazz;
+    private final OnLoadListener onLoadListener;
 
     private long dataTimestamp; //数据时间戳
     private Object data;        //缓存数据
@@ -23,28 +24,31 @@ public class BeeCache implements Cache {
         this.timeInterval = builder.timeInterval;
         this.expirationTimeType = builder.expirationTimeType;
         this.clazz = builder.clazz;
+        this.onLoadListener = builder.onLoadListener;
     }
 
     @Override
     public Object getData() {
-        if (dataTimestamp == 0 || isExpired()) {
+        if (this.dataTimestamp == 0 || isExpired()) {
             synchronized (this) {
-                if (dataTimestamp == 0 || isExpired()) {
+                if (this.dataTimestamp == 0 || isExpired()) {
                     try {
-                        Method[] methods = clazz.getDeclaredMethods();
-                        Object data = null;
+                        Method[] methods = this.clazz.getDeclaredMethods();
                         for (Method method : methods) {
                             CacheParam cacheParam = method.getAnnotation(CacheParam.class);
-                            if (this.key.equals(cacheParam.key())) {
-                                Object dataLoad = clazz.newInstance();
+                            if (cacheParam != null && this.key.equals(cacheParam.key())) {
                                 method.setAccessible(true);
-                                data = method.invoke(dataLoad);
+                                Object instance = this.onLoadListener;
+                                if (instance == null) {
+                                    instance = clazz.newInstance();
+                                }
+                                Object result = method.invoke(instance);
+                                if (result != null) {
+                                    this.data = result;
+                                    this.dataTimestamp = System.currentTimeMillis();
+                                }
                                 break;
                             }
-                        }
-                        if (data != null) {
-                            this.data = data;
-                            this.dataTimestamp = System.currentTimeMillis();
                         }
                     } catch (Exception e) {
                         LOG.info("DataLoad Exception...");
@@ -95,6 +99,8 @@ public class BeeCache implements Cache {
         private ExpirationTimeType expirationTimeType = ExpirationTimeType.NaturalCycleInterval;
         private long timeInterval = TimeUnit.DAYS.toMillis(1);
         private Class<?> clazz = null;
+        private OnLoadListener onLoadListener = null;
+
 
         /**
          * @param key 数据表
@@ -106,8 +112,16 @@ public class BeeCache implements Cache {
         /**
          * @param clazz 数据加载
          */
-        public Builder setDataLoadClass(Class clazz) {
+        public Builder setClass(Class<?> clazz) {
             this.clazz = clazz;
+            return this;
+        }
+
+        /**
+         * @param listener 数据加载
+         */
+        public Builder setOnLoadListener(OnLoadListener listener) {
+            this.onLoadListener = listener;
             return this;
         }
 
@@ -129,7 +143,7 @@ public class BeeCache implements Cache {
 
         public BeeCache build() {
             if (this.clazz == null) {
-                throw new NullPointerException("this.dataLoad is null!");
+                throw new NullPointerException("this.clazz is null!");
             }
             return new BeeCache(this);
         }

@@ -17,19 +17,16 @@ public @interface CacheParam {
 
     /**
      * 时间单位
-     * @return 默认 天
      */
     TimeUnit timeUnit() default TimeUnit.DAYS;
 
     /**
      * 时长
-     * @return 1
      */
     long duration() default 1;
 
     /**
      * 自然时间间隔
-     * @return 默认NaturalCycleInterval
      */
     ExpirationTimeType expirationTimeType() default ExpirationTimeType.NaturalCycleInterval;
 }

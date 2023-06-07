@@ -1,12 +1,13 @@
 package com.miismi.common.example;
 
 import com.miismi.common.cache.BeeCacheUtil;
+import com.miismi.common.cache.OnLoadListener;
 
 import java.util.Map;
 
-public class ExampleMain {
-    public static void main(String[] args) throws InterruptedException {
+public class ExampleMain implements OnLoadListener {
 
+    public static void main(String[] args) throws InterruptedException {
         //1.初始化数据加载逻辑
         BeeCacheUtil.add(DataLoad.class);
 
